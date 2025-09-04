@@ -1,119 +1,82 @@
-from fastapi import Query, Body, HTTPException, APIRouter
-from src.schemas.hotels import HotelPUT,HotelPatch
+from fastapi import Query,Body, APIRouter
+from sqlalchemy import insert, select, column
+
+from src.schemas.hotels import Hotel,HotelPatch
 from src.api.dependencies import PaginationDep
+from database import async_session_maker
+from src.models.hotels import HotelsORM
 
-router = APIRouter()
-
-hotels = [
-    {"id": 1, "title": "Sochi", "name": "sochi"},
-    {"id": 2, "title": "Дубай", "name": "dubai"},
-    {"id": 3, "title": "Мальдивы", "name": "maldivi"},
-    {"id": 4, "title": "Геленджик", "name": "gelendzhik"},
-    {"id": 5, "title": "Москва", "name": "moscow"},
-    {"id": 6, "title": "Казань", "name": "kazan"},
-    {"id": 7, "title": "Санкт-Петербург", "name": "spb"},
-]
+router = APIRouter(prefix="/hotels", tags=["hotels"])
 
 
-@router.get("/hotels")
-def get_hotels(
+@router.get("")
+async def get_hotels(
         pagination: PaginationDep,
-        id : int | None = Query(default=None,description="Айди"),
-        title : str | None = Query(default=None,description="Название отеля"),
+        title:str | None = Query(None,description="Hotel Title"),
+        location:str | None = Query(None,description="Hotel Location"),
 ):
-    hotels_ = []
-    for hotel in hotels:
-        if id and hotel["id"] != id:
-            continue
-        if title and hotel["title"] != title:
-            continue
-        hotels_.append(hotel)
-    return hotels_[(pagination.page-1) * pagination.per_page :(pagination.page-1) * pagination.per_page + pagination.per_page]
+    per_page = pagination.per_page or 5
+    async with async_session_maker() as session:
+        query = select(HotelsORM)
+        if title:
+            query = query.where(column("title").like(f"%{title}%"))
+        if location:
+            query = query.where(column("location").like(f"%{location}%"))
+            print(query)
+        query = (
+            query
+            .limit(per_page)
+            .offset(per_page * (pagination.page -1))
+        )
+        print(query.compile(compile_kwargs={"literal_binds": True}))
+        result = await session.execute(query)
+        hotels = result.scalars().all()
+        return hotels
 
-@router.delete("/hotels/{hotel_id}")
+
+
+@router.delete("/{hotel_id}")
 def delete_hotels(
-    hotel_id: int
 ):
-    global hotels
-    hotels = [hotel for hotel in hotels if hotel["id"] != hotel_id]
-    return {"status": 200, "hotels": hotels}
+    pass
 
-@router.post("/hotels")
-def create_hotel(
-    title: str = Body(embed=True),
-    name: str = Body(embed=True),
-):
-    global hotels
-    hotels.append(
-        {
-            "id": hotels[-1]["id"]+1,
-            "title":title,
-            "name":name,
+@router.post("")
+async def create_hotel(
+    hotel_data: Hotel = Body(
+        openapi_examples={
+            "1": {
+                "summary": "Сочи",
+                "value": {
+                    "title": "Отель 5 звезд у моря",
+                    "location": "Сочи, ул. Моря, 1",
+                },
+            },
+            "2": {
+                "summary": "Дубай",
+                "value": {
+                    "title": "Отель  У фонтана",
+                    "location": "Дубай, ул. Шейха, 2",
+                },
+            },
         }
-    )
-    return {"status": 200, "hotels": hotels}
-
-
-
-
-@router.patch("/hotels/{hotel_id}")
-def change_hotel(
-    hotel_id: int,
-    update_data : HotelPatch,
+    ),
 ):
-    hotel_to_update = None
-    for i,val in enumerate(hotels):
-        if hotels[i]["id"] == hotel_id:
-            hotel_to_update = hotels[i]
-            break
-
-    if not hotel_to_update:
-        raise HTTPException(status_code=404, detail="Отель не найден")
-
-    update_dict = update_data.model_dump(exclude_unset=True)
-    print(f"update_dict: {update_dict}")
+    async with async_session_maker() as session:
+        add_hotel_statement = insert(HotelsORM).values(**hotel_data.model_dump())
+        await session.execute(add_hotel_statement)
+        await session.commit()
+        return {"status": 200}
 
 
-    for field, value in update_dict.items():
-        hotel_to_update[field] = value
 
-    return {"status": 200, "hotels": hotels}
 
-@router.put("/hotels/{hotel_id}")
+@router.patch("/{hotel_id}")
 def change_hotel(
-    hotel_id: int,
-    update_data : HotelPUT,
 ):
-    hotel_to_update = None
-    for i,val in enumerate(hotels):
-        if hotels[i]["id"] == hotel_id:
-            hotel_to_update = hotels[i]
-            break
+    pass
 
-
-    if not hotel_to_update:
-        raise HTTPException(status_code=404, detail="Отель не найден")
-
-    update_dict = update_data.model_dump()
-
-    for field, value in update_dict.items():
-        hotel_to_update[field] = value
-
-    return {"status": 200, "hotels": hotels}
-
-
-# import time,asyncio
-#
-# @router.get("/sync/{id}")
-# def sync_func(id:int):
-#     print(f"sync начал {id}:{time.time():.2f}")
-#     time.sleep(3)
-#     print(f"sync закончил {id}:{time.time():.2f}")
-#
-#
-# @router.get("/async/{id}",)
-# async def async_func(id:int):
-#     print(f"async начал {id}:{time.time():.2f}")
-#     await asyncio.sleep(3)
-#     print(f"async закончил {id}:{time.time():.2f}")
+@router.put("/{hotel_id}")
+def change_hotel(
+):
+   pass
 
