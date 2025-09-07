@@ -28,9 +28,13 @@ async def get_hotels(
 
 
 @router.delete("/{hotel_id}")
-def delete_hotels(
+async def delete_hotels(
+    hotel_id:int
 ):
-    pass
+    async with async_session_maker() as session:
+        await HotelRepository(session).delete(id=hotel_id)
+        await session.commit()
+        return {"status": 200}
 
 @router.post("")
 async def create_hotel(
@@ -54,20 +58,23 @@ async def create_hotel(
     ),
 ):
     async with async_session_maker() as session:
-        hotel = await HotelRepository(session).add(**hotel_data.model_dump())
+        hotel = await HotelRepository(session).add(hotel_data)
         await session.commit()
         return {"status": 200,"data":hotel}
 
 
-
-
 @router.patch("/{hotel_id}")
-def change_hotel(
+async def change_hotel(
 ):
     pass
 
 @router.put("/{hotel_id}")
-def change_hotel(
+async def change_hotel(
+    hotel_id:int,
+    hotel_data: Hotel = Body(),
 ):
-   pass
+    async with async_session_maker() as session:
+        await HotelRepository(session).update(model_data=hotel_data, id=hotel_id)
+        await session.commit()
+        return {"status": 200}
 
