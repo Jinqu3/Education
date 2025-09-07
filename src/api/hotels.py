@@ -1,6 +1,5 @@
 from fastapi import Query,Body, APIRouter
 from sqlalchemy import insert, select, column
-from src.models.hotels import HotelsORM
 
 from src.schemas.hotels import Hotel,HotelPatch
 from src.api.dependencies import PaginationDep
@@ -25,6 +24,12 @@ async def get_hotels(
             offset=pagination.per_page * (pagination.page-1)
         )
 
+@router.get("/{hotel_id}")
+async def get_hotel(
+    hotel_id: int,
+):
+    async with async_session_maker() as session:
+        return await HotelRepository(session).get_one_or_none(id=hotel_id)
 
 
 @router.delete("/{hotel_id}")
@@ -33,7 +38,6 @@ async def delete_hotels(
 ):
     async with async_session_maker() as session:
         await HotelRepository(session).delete(id=hotel_id)
-        await session.commit()
         return {"status": 200}
 
 @router.post("")
@@ -65,8 +69,13 @@ async def create_hotel(
 
 @router.patch("/{hotel_id}")
 async def change_hotel(
+    hotel_id:int,
+    hotel_data: HotelPatch = Body(),
 ):
-    pass
+    async with async_session_maker() as session:
+        await HotelRepository(session).update(hotel_data, exclude_unset=True, id=hotel_id)
+        await session.commit()
+        return {"status": 200}
 
 @router.put("/{hotel_id}")
 async def change_hotel(
@@ -74,7 +83,7 @@ async def change_hotel(
     hotel_data: Hotel = Body(),
 ):
     async with async_session_maker() as session:
-        await HotelRepository(session).update(model_data=hotel_data, id=hotel_id)
+        await HotelRepository(session).update(hotel_data,exclude_unset = False, id=hotel_id)
         await session.commit()
         return {"status": 200}
 
