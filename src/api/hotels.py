@@ -1,12 +1,12 @@
 from fastapi import Query,Body, APIRouter
 from sqlalchemy import insert, select, column
 
-from src.schemas.hotels import Hotel,HotelPatch
+from src.schemas.hotels import Hotel,HotelPatch,HotelAdd
 from src.api.dependencies import PaginationDep
 from src.database import async_session_maker
 from src.repository.hotels import HotelRepository
 
-router = APIRouter(prefix="/hotels", tags=["hotels"])
+router = APIRouter(prefix="/hotels", tags=["Отели"])
 
 
 @router.get("")
@@ -42,7 +42,7 @@ async def delete_hotels(
 
 @router.post("")
 async def create_hotel(
-    hotel_data: Hotel = Body(
+    hotel_data: HotelAdd = Body(
         openapi_examples={
             "1": {
                 "summary": "Сочи",
@@ -80,7 +80,7 @@ async def change_hotel(
 @router.put("/{hotel_id}")
 async def change_hotel(
     hotel_id:int,
-    hotel_data: Hotel = Body(),
+    hotel_data: HotelAdd = Body(),
 ):
     async with async_session_maker() as session:
         await HotelRepository(session).update(hotel_data,exclude_unset = False, id=hotel_id)
