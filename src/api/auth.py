@@ -1,21 +1,22 @@
 from fastapi import APIRouter, HTTPException
-from passlib.context import CryptContext
 from sqlalchemy.exc import IntegrityError
+from fastapi import Response
 
+from src.services.auth import AuthService
 from src.database import async_session_maker
 from src.repository.users import UsersRepository
 from src.schemas.users import UserRequestADD,UserAdd
 
+
 router = APIRouter(prefix="/auth", tags=["Авторизация и аутентификация"])
 
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 @router.post("/register")
 async def register_user(
         data: UserRequestADD,
 ):
-    hashed_password = pwd_context.hash(data.password)
+    hashed_password = AuthService().hash_password(data.password)
     new_user_data = UserAdd(email=data.email,hashed_password=hashed_password)
     async with async_session_maker() as session:
         try:
@@ -23,4 +24,21 @@ async def register_user(
         except IntegrityError:
             return HTTPException(500,detail="user already exists")
         await session.commit()
-    return {"status": OK}
+    return {"status": "OK"}
+
+@router.post("/login")
+async def login_user(
+        data: UserRequestADD,
+        response: Response,
+):
+    async with async_session_maker() as session:
+        user = await UsersRepository(session).get_user_with_hashed_password(email=data.email)
+
+        if not AuthService().verify_password(data.password, user.hashed_password):
+            raise HTTPException(404, detail="Password doesn't match")
+        if not user:
+            raise HTTPException(401,detail="User not found")
+
+        access_token = AuthService().create_access_token({"user_id": user.id})
+        response.set_cookie("access_token", access_token)
+    return {"access_token": access_token}
