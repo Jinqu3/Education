@@ -34,7 +34,9 @@ class BaseRepository():
             return self.schema.model_validate(res, from_attributes=True)
 
     async def update(self,model_data:BaseModel, exclude_unset:bool = False, **filter_by) -> None:
-
+        """
+        param: exclude_unset bool - True when we use patch method and False when use put method
+        """
         if not await self.get_one_or_none(**filter_by):
             raise HTTPException(status_code=404, detail="Объект не найден")
 
