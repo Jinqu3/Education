@@ -5,7 +5,7 @@ from schemas.hotels import Hotel
 from src.repository.base import BaseRepository
 from src.models.hotels import HotelsORM
 
-class HotelRepository(BaseRepository):
+class HotelsRepository(BaseRepository):
     model = HotelsORM
     schema = Hotel
 
