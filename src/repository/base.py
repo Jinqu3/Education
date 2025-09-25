@@ -10,10 +10,14 @@ class BaseRepository():
     def __init__(self, session):
         self.session = session
 
-    async def get_all(self,*args,**kwargs):
-        query = select(self.model)
+
+    async def get_filtered(self,*args,**filter_by):
+        query = select(self.model).filter_by(**filter_by)
         result = await self.session.execute(query)
         return [self.schema.model_validate(row,from_attributes=True) for row in result.scalars().all()]
+
+    async def get_all(self,*args,**kwargs):
+        return await self.get_filtered()
 
     async def get_one_or_none(self, **filter_by):
         query = select(self.model).filter_by(**filter_by)
@@ -49,4 +53,4 @@ class BaseRepository():
     async def delete(self, **filter_by) -> None:
         stmt = delete(self.model).filter_by(**filter_by)
         await self.session.execute(stmt)
-        await session.commit()
+        await self.session.commit()
