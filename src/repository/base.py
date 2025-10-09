@@ -16,7 +16,7 @@ class BaseRepository():
         result = await self.session.execute(query)
         return [self.schema.model_validate(row,from_attributes=True) for row in result.scalars().all()]
 
-    async def get_all(self,*args,**kwargs):
+    async def get_all(self):
         return await self.get_filtered()
 
     async def get_one_or_none(self, **filter_by):
