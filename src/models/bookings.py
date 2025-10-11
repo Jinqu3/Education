@@ -2,7 +2,6 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped,mapped_column
 from sqlalchemy import ForeignKey
 from datetime import date
-
 from src.database import Base
 
 
@@ -15,7 +14,3 @@ class BookingsORM(Base):
     date_from: Mapped[date]
     date_to: Mapped[date]
     price: Mapped[int]
-
-    @hybrid_property
-    def total_cost(self)-> int:
-        return self.price * (self.date_to - self.date_from).days

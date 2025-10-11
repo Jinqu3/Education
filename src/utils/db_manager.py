@@ -1,8 +1,8 @@
 from database import async_session_maker
-from repository.bookings import BookingsRepository
-from repository.hotels import HotelsRepository
-from repository.rooms import RoomsRepository
-from repository.users import UsersRepository
+from src.repository.bookings import BookingsRepository
+from src.repository.hotels import HotelsRepository
+from src.repository.rooms import RoomsRepository
+from src.repository.users import UsersRepository
 
 
 class DBManager:

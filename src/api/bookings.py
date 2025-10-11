@@ -36,10 +36,9 @@ async def get_bookings(
         db: DBDep
 ):
     try:
-        bookings = await db.bookings.get_all()
+        return await db.bookings.get_all()
     except:
         raise HTTPException(404,detail="Непредвиденная ошибка")
-    return {"status": 200, "data": bookings}
 
 @router.get("/me")
 async def get_my_bookings(
@@ -47,7 +46,6 @@ async def get_my_bookings(
         db: DBDep
 ):
     try:
-        bookings = await db.bookings.get_filtered(user_id=user_id)
+        return await db.bookings.get_filtered(user_id=user_id)
     except:
         raise HTTPException(404,detail="Непредвиденная ошибка")
-    return {"status": 200, "data": bookings}

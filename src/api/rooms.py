@@ -1,5 +1,7 @@
-from fastapi import APIRouter,HTTPException,Body
+from fastapi import APIRouter,HTTPException,Body,Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import date
+
 
 from src.schemas.rooms import RoomAdd, RoomAddRequest, RoomPatch, RoomPatchRequest
 from src.database import async_session_maker
@@ -12,24 +14,17 @@ router = APIRouter(prefix="/hotels", tags=["Номера"])
 @router.get("/{hotel_id}/rooms")
 async def get_rooms(
     hotel_id: int,
-    db: DBDep
+    db: DBDep,
+    date_from: date = Query(example="2025-08-01"),
+    date_to: date = Query(example="2025-08-01")
 ):
+    rooms = await db.rooms.get_filtered_by_time(hotel_id=hotel_id,date_from=date_from,date_to=date_to)
     try:
-        rooms = await db.rooms.get_filtered(hotel_id=hotel_id)
+        print(rooms)
     except Exception as e:
         raise HTTPException(404, detail=f"Не возможно получить список номеров")
     return {"rooms": rooms}
 
-@router.get("/{hotel_id}/rooms")
-async def get_rooms_2(
-    db: DBDep,
-    hotel_id: int
-):
-    try:
-        rooms = await db.rooms.get_filtered(hotel_id=hotel_id)
-    except Exception as e:
-        raise HTTPException(404, detail=f"Не возможно получить список номеров")
-    return {"rooms": rooms}
 
 @router.get("/{hotel_id}/rooms/{room_id}")
 async def get_room(
