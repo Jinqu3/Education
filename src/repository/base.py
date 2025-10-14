@@ -41,6 +41,11 @@ class BaseRepository():
         else:
             return self.schema.model_validate(res, from_attributes=True)
 
+    async def add_bulk(self,model_data: BaseModel):
+        add_data_stmt = insert(self.model).values([item.model_dump() for item in model_data])
+        await self.session.execute(add_data_stmt)
+
+
     async def update(self,model_data:BaseModel, exclude_unset:bool = False, **filter_by) -> None:
         """
         param: exclude_unset bool - True when we use patch method and False when use put method

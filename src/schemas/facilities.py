@@ -10,10 +10,6 @@ class Facility(FacilityAdd):
 
     model_config = ConfigDict(from_attributes=True)
 
-
-class RoomFacilityRequest(BaseModel):
-    facility_id: int
-
 class RoomFacilityAdd(BaseModel):
     room_id: int
     facility_id: int
