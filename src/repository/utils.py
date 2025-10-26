@@ -52,4 +52,5 @@ def rooms_ids_for_booking(
             rooms_left_table.c.room_id.in_(rooms_ids_for_hotel),
         )
     )
+
     return rooms_ids_to_get

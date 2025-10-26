@@ -30,8 +30,9 @@ async def get_room(
     hotel_id: int,
     room_id: int,
 ):
+    room = await db.rooms.get_room_with_facilities(hotel_id=hotel_id, room_id=room_id)
     try:
-        room = await db.rooms.get_one_or_none(hotel_id=hotel_id, id=room_id)
+        pass
     except Exception as e:
         raise HTTPException(404, detail=f"Не возможно получить номер")
     return {"room": room}
@@ -72,28 +73,12 @@ async def change_room(
     db: DBDep,
     hotel_id: int,
     room_id: int,
-    room_data: RoomAdd = Body(),
+    room_data: RoomAddRequest = Body(),
 ):
     try:
-        current_facility_ids = await db.rooms.get_facilities_ids(hotel_id=hotel_id, id=room_id)
-
-        new_facility_ids = set(room_data.facilities_ids)
-        current_facility_ids_set = set(current_facility_ids)
-
-        to_add = new_facility_ids - current_facility_ids_set
-        to_remove = current_facility_ids_set - new_facility_ids
-
-        if to_remove:
-            # Удаление ненужных
-            await db.rooms.delete_room_facilities(room_id=room_id, facilities_ids=to_remove)
-
-        if to_add:
-            # Добавление новых
-            rooms_facilities_data = [RoomFacilityAdd(room_id=room_id, facility_id=f_id) for f_id in to_add]
-            await db.rooms_facilities.add_bulk(rooms_facilities_data)
-
-        _room_data = RoomPatchRequest(**room_data.model_dump(exclude={'facilities_ids'}))
+        _room_data = RoomAdd(**room_data.model_dump(exclude={'facilities_ids'}))
         await db.rooms.update(_room_data,False,id = room_id,hotel_id = hotel_id)
+        await db.rooms_facilities.set_room_facilities(room_id,facility_ids = room_data.facilities_ids)
         await db.commit()
     except Exception as e:
         raise HTTPException(404, detail=f"Не возможно изменить номер:")
@@ -104,30 +89,14 @@ async def change_room(
     db:DBDep,
     hotel_id: int,
     room_id: int,
-    room_data: RoomPatch = Body(),
+    room_data: RoomPatchRequest = Body(),
 ):
     try:
-        current_facility_ids = await db.rooms.get_facilities_ids(hotel_id=hotel_id, id=room_id)
-
-        new_facility_ids = set(room_data.facilities_ids)
-        current_facility_ids_set = set(current_facility_ids)
-
-        to_add = new_facility_ids - current_facility_ids_set
-        to_remove = current_facility_ids_set - new_facility_ids
-
-        if to_remove:
-            # Удаление ненужных
-            await db.rooms.delete_room_facilities(room_id=room_id, facilities_ids=to_remove)
-
-        if to_add:
-            # Добавление новых
-            rooms_facilities_data = [RoomFacilityAdd(room_id=room_id, facility_id=f_id) for f_id in to_add]
-            await db.rooms_facilities.add_bulk(rooms_facilities_data)
-
-        room_dict = room_data.model_dump(exclude={'facilities_ids'}, exclude_unset=True)
-        if room_dict:
-            update_data = RoomPatchRequest(**room_dict)
-            await db.rooms.update(update_data, True, id=room_id, hotel_id=hotel_id)
+        _room_data_dict = room_data.model_dump(exclude_unset=True)
+        _room_data = RoomPatch(hotel_id=hotel_id, **_room_data_dict)
+        await db.rooms.update(_room_data, exclude_unset=True, id=room_id, hotel_id=hotel_id)
+        if "facilities_ids" in _room_data_dict:
+            await db.rooms_facilities.set_room_facilities(room_id, facilities_ids=room_data.facilities_ids)
         await db.commit()
     except Exception as e:
         raise HTTPException(404, detail=f"Не возможно изменить номер:{e}")

@@ -1,11 +1,12 @@
 from src.models.facilities import RoomsFacilitiesORM
 from src.repository.base import BaseRepository
 from src.models.rooms import RoomsORM
-from src.schemas.rooms import Room
+from src.schemas.rooms import Room,RoomWithRels
 from src.database import engine
 from src.repository.utils import rooms_ids_for_booking
 
 from sqlalchemy import select,func,delete
+from sqlalchemy.orm import selectinload,joinedload
 from datetime import date
 
 class RoomsRepository(BaseRepository):
@@ -14,14 +15,33 @@ class RoomsRepository(BaseRepository):
 
     async def get_filtered_by_time(
             self,
-            hotel_id: int,
+            hotel_id,
             date_from: date,
-            date_to: date
+            date_to: date,
     ):
+        rooms_ids_to_get = rooms_ids_for_booking(date_from, date_to, hotel_id)
+        print(rooms_ids_to_get)
 
-        rooms_ids_to_get = rooms_ids_for_booking(hotel_id=hotel_id,date_from=date_from,date_to=date_to)
+        query = (
+            select(self.model)
+            .options(joinedload(self.model.facilities))
+            .filter(RoomsORM.id.in_(rooms_ids_to_get))
+        )
+        result = await self.session.execute(query)
+        return [RoomWithRels.model_validate(model) for model in result.unique().scalars().all()]
 
-        return await self.get_filtered(RoomsORM.id.in_(rooms_ids_to_get))
+    async def get_room_with_facilities(
+            self,
+            hotel_id: int,
+            room_id: int,
+    ):
+        query = (
+            select(self.model)
+            .options(joinedload(self.model.facilities))
+            .filter(RoomsORM.id == room_id, RoomsORM.hotel_id==hotel_id)
+        )
+        result = await self.session.execute(query)
+        return [RoomWithRels.model_validate(model) for model in result.unique().scalars().all()]
 
     async def get_facilities_ids(self, **filter_by):
         query = (

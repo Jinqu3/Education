@@ -1,4 +1,4 @@
-from sqlalchemy import select
+
 
 from src.database import async_session_maker
 from src.schemas.bookings import Booking
