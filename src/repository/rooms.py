@@ -1,9 +1,10 @@
 from src.models.facilities import RoomsFacilitiesORM
 from src.repository.base import BaseRepository
 from src.models.rooms import RoomsORM
-from src.schemas.rooms import Room,RoomWithRels
+from src.schemas.rooms import RoomWithRels
 from src.database import engine
 from src.repository.utils import rooms_ids_for_booking
+from src.repository.mappers.mappers import RoomDataMapper
 
 from sqlalchemy import select,func,delete
 from sqlalchemy.orm import selectinload,joinedload
@@ -11,7 +12,7 @@ from datetime import date
 
 class RoomsRepository(BaseRepository):
     model = RoomsORM
-    schema = Room
+    mapper = RoomDataMapper
 
     async def get_filtered_by_time(
             self,
@@ -30,33 +31,18 @@ class RoomsRepository(BaseRepository):
         result = await self.session.execute(query)
         return [RoomWithRels.model_validate(model) for model in result.unique().scalars().all()]
 
-    async def get_room_with_facilities(
+    async def get_one_or_none_with_rels(
             self,
-            hotel_id: int,
-            room_id: int,
+            **filter_by
     ):
         query = (
             select(self.model)
             .options(joinedload(self.model.facilities))
-            .filter(RoomsORM.id == room_id, RoomsORM.hotel_id==hotel_id)
-        )
-        result = await self.session.execute(query)
-        return [RoomWithRels.model_validate(model) for model in result.unique().scalars().all()]
-
-    async def get_facilities_ids(self, **filter_by):
-        query = (
-            select(RoomsFacilitiesORM.facility_id)
-            .join(self.model, self.model.id == RoomsFacilitiesORM.room_id)
             .filter_by(**filter_by)
         )
         result = await self.session.execute(query)
-        facility_ids = [row[0] for row in result.all()]
-        return facility_ids
+        model = result.unique().scalars().one_or_none()
+        if model is None:
+            return None
+        return RoomWithRels.model_validate(model)
 
-    async def delete_room_facilities(self, room_id:int, facilities_ids: list[int]) -> None:
-        stmt = delete(RoomsFacilitiesORM).where(
-            RoomsFacilitiesORM.room_id == room_id,
-            RoomsFacilitiesORM.facility_id.in_(facilities_ids)
-        )
-        await self.session.execute(stmt)
-        await self.session.commit()

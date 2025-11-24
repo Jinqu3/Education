@@ -1,4 +1,3 @@
-from database import async_session_maker
 from src.repository.bookings import BookingsRepository
 from src.repository.hotels import HotelsRepository
 from src.repository.rooms import RoomsRepository
@@ -20,7 +19,6 @@ class DBManager:
         self.bookings = BookingsRepository(self.session)
         self.facilities = FacilityRepository(self.session)
         self.rooms_facilities = RoomFacilityRepository(self.session)
-
 
         return self
 

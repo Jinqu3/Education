@@ -14,8 +14,8 @@ router = APIRouter(prefix="/hotels", tags=["Номера"])
 async def get_rooms(
     hotel_id: int,
     db: DBDep,
-    date_from: date = Query(example="2024-08-01"),
-    date_to: date = Query(example="2024-08-01")
+    date_from: date = Query(openapi_examples="2024-08-01"),
+    date_to: date = Query(openapi_examples="2024-08-01")
 ):
     try:
         rooms = await db.rooms.get_filtered_by_time(hotel_id=hotel_id,date_from=date_from,date_to=date_to)
@@ -30,9 +30,8 @@ async def get_room(
     hotel_id: int,
     room_id: int,
 ):
-    room = await db.rooms.get_room_with_facilities(hotel_id=hotel_id, room_id=room_id)
     try:
-        pass
+        room = await db.rooms.get_one_or_none_with_rels(hotel_id=hotel_id, id=room_id)
     except Exception as e:
         raise HTTPException(404, detail=f"Не возможно получить номер")
     return {"room": room}

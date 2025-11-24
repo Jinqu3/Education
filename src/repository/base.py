@@ -1,11 +1,12 @@
 from pydantic import BaseModel
 from sqlalchemy import select, insert, delete, update
 from fastapi import HTTPException
+from src.repository.mappers.base import DataMapper
 
 
 class BaseRepository():
     model = None
-    schema: BaseModel = None
+    mapper: DataMapper = None
 
     def __init__(self, session):
         self.session = session
@@ -18,7 +19,7 @@ class BaseRepository():
             .filter_by(**filter_by)
         )
         result = await self.session.execute(query)
-        return [self.schema.model_validate(row,from_attributes=True) for row in result.scalars().all()]
+        return [self.mapper.map_to_domain_entity(model) for model in result.scalars().all()]
 
     async def get_all(self):
         return await self.get_filtered()
@@ -30,7 +31,7 @@ class BaseRepository():
         if res is None:
             return None
         else:
-            return self.schema.model_validate(res,from_attributes=True)
+            return self.mapper.map_to_domain_entity(res)
 
     async def add(self,model_data: BaseModel):
         stmt = insert(self.model).values(**model_data.model_dump()).returning(self.model)
@@ -39,7 +40,7 @@ class BaseRepository():
         if res is None:
             return None
         else:
-            return self.schema.model_validate(res, from_attributes=True)
+            return self.mapper.map_to_domain_entity(res)
 
     async def add_bulk(self,model_data: BaseModel):
         add_data_stmt = insert(self.model).values([item.model_dump() for item in model_data])

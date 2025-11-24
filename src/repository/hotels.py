@@ -3,6 +3,7 @@ from fastapi import HTTPException
 from sqlalchemy import select,func
 from datetime import date
 
+from src.repository.mappers.mappers import HotelDataMapper
 from src.database import async_session_maker
 from src.models.rooms import RoomsORM
 from src.schemas.hotels import Hotel
@@ -13,7 +14,7 @@ from src.repository.utils import rooms_ids_for_booking
 class HotelsRepository(BaseRepository):
     model = HotelsORM
     schema = Hotel
-
+    mapper = HotelDataMapper
 
     async def get_filtered_by_time(
             self,
@@ -45,4 +46,4 @@ class HotelsRepository(BaseRepository):
             result = await self.session.execute(query)
         except:
             return HTTPException(404,detail="Непредвиденная ошибка")
-        return [Hotel.model_validate(hotel, from_attributes=True) for hotel in result.scalars().all()]
+        return [self.mapper.map_to_domain_entity(hotel) for hotel in result.scalars().all()]
