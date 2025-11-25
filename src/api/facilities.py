@@ -19,7 +19,7 @@ async def get_facilities(
     return await db.facilities.get_all()
 
 @router.get("/{facility_id}")
-async def get_facilities(
+async def get_facility(
     db: DBDep,
     facility_id: int,
 ):

@@ -6,11 +6,11 @@ import json
 from src.schemas.rooms import RoomAdd
 from src.schemas.hotels import HotelAdd
 from src.config import settings
-from src.database import Base,engine_null_pool,async_session_maker_null_pool
+from src.database import Base,engine,async_session_maker
 from src.models import *
 from src.main import app
 from src.utils.db_manager import DBManager
-
+from src.api.dependencies import get_db
 
 
 
@@ -20,13 +20,13 @@ async def check_test_mode():
 
 @pytest.fixture(scope="function")
 async def db()->DBManager:
-    async with (DBManager(session_factory=async_session_maker_null_pool) as db):
+    async with (DBManager(session_factory=async_session_maker) as db):
         yield db
 
 @pytest.fixture(scope="session",autouse=True)
 async def setup_database(check_test_mode):
 
-    async with engine_null_pool.begin() as conn:
+    async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
 
@@ -54,7 +54,7 @@ async def add_data(setup_database):
             for room in json.loads(f.read())
         ]
 
-    async with DBManager(session_factory=async_session_maker_null_pool) as db:
+    async with DBManager(session_factory=async_session_maker) as db:
         await db.hotels.add_bulk(hotels)
         await db.rooms.add_bulk(rooms)
         await db.commit()
@@ -64,6 +64,7 @@ async def add_data(setup_database):
 async def ac()->DBManager:
     async with AsyncClient(transport=ASGITransport(app=app),base_url="http://test") as ac:
         yield ac
+
 
 
 @pytest.fixture(scope="session",autouse=True)
