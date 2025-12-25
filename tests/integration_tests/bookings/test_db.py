@@ -20,7 +20,7 @@ async def test_booking_crud(db):
     #READ
     booking = await db.bookings.get_one_or_none(id=new_booking.id)
     assert new_booking
-    assert booking.user_id == new_booking.id
+    assert booking.user_id == new_booking.user_id
     assert booking.room_id == new_booking.room_id
     assert booking.date_from == new_booking.date_from
     assert booking.date_to == new_booking.date_to

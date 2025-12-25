@@ -14,20 +14,15 @@ async def create_booking(
     booking_data: BookingAddRequest = Body()
 ):
     # Расчёт суммы бронирования
-    try:
-        room = await db.rooms.get_one_or_none(id=booking_data.room_id)
-        room_price = room.price
-        days = (booking_data.date_to - booking_data.date_from).days
-        price = days * room_price
-    except:
-        raise HTTPException(status_code=400,detail="Невозможно рассчитать сумму бронирования")
-    try:
-        booking_data = BookingAdd(user_id=user_id,price=price,**booking_data.model_dump())
-        booking = await db.bookings.add(booking_data)
-        await db.commit()
-    except:
-        
-        return HTTPException(status_code=400, detail="Невозможно забронировать номер")
+    room = await db.rooms.get_one_or_none(id=booking_data.room_id)
+    room_price = room.price
+    days = (booking_data.date_to - booking_data.date_from).days
+    price = days * room_price
+
+    _booking_data = BookingAdd(user_id=user_id,price=price,**booking_data.model_dump())
+    booking = await db.bookings.add_booking(_booking_data,hotel_id=room.hotel_id)
+    await db.commit()
+
     return {"status": 200, "data": booking}
 
 

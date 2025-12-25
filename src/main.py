@@ -26,6 +26,9 @@ async def lifespan(app: FastAPI):
     yield
     await redis_manager.close()
 
+if settings.MODE == "TEST":
+    FastAPICache.init(RedisBackend(redis=redis_manager.redis),prefix="fastapi-cache")
+
 app = FastAPI(lifespan=lifespan)
 
 app.include_router(router_auth)

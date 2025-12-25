@@ -1,7 +1,10 @@
 import pytest
 from sqlalchemy.ext.asyncio import create_async_engine
 from httpx import AsyncClient,ASGITransport
+from unittest import mock
 import json
+
+mock.patch("fastapi_cache.decorator.cache", lambda *args, **kwargs: lambda f: f).start()
 
 from src.schemas.rooms import RoomAdd
 from src.schemas.hotels import HotelAdd
@@ -11,7 +14,6 @@ from src.models import *
 from src.main import app
 from src.utils.db_manager import DBManager
 from src.api.dependencies import get_db
-
 
 
 @pytest.fixture(scope="session",autouse=True)
@@ -66,7 +68,6 @@ async def ac()->DBManager:
         yield ac
 
 
-
 @pytest.fixture(scope="session",autouse=True)
 async def register_user(ac, setup_database):
     await ac.post(
@@ -76,4 +77,16 @@ async def register_user(ac, setup_database):
             "password": "password",
         }
     )
+
+@pytest.fixture(scope="session",autouse=True)
+async def auth_ac(ac, setup_database, register_user):
+    await ac.post(
+        "/auth/login",
+        json={
+            "email": "email@example.com",
+            "password": "password",
+        }
+    )
+    assert ac.cookies.get("access_token")
+    yield ac
 
