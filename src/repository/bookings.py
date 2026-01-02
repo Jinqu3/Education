@@ -6,8 +6,6 @@ from sqlalchemy import select
 from repository.utils import rooms_ids_for_booking
 from schemas.bookings import BookingAdd
 from src.repository.mappers.mappers import BookingDataMapper
-from src.database import async_session_maker
-from src.schemas.bookings import Booking
 from src.repository.base import BaseRepository
 from src.models.bookings import BookingsORM
 

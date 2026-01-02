@@ -3,7 +3,6 @@ import shutil
 
 from src.tasks.tasks import resize_image
 
-from pathlib import Path
 router = APIRouter(prefix="/images",tags=["Изображения"])
 
 @router.post("")

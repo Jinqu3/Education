@@ -1,11 +1,9 @@
 from fastapi import APIRouter,HTTPException,Body,Query
-from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import date
 
 from src.schemas.facilities import RoomFacilityAdd
 from src.schemas.rooms import RoomAdd, RoomAddRequest, RoomPatch,RoomPatchRequest
-from src.database import async_session_maker
-from src.api.dependencies import UserIdDep,DBDep
+from src.api.dependencies import DBDep
 
 
 router = APIRouter(prefix="/hotels", tags=["Номера"])
@@ -19,8 +17,8 @@ async def get_rooms(
 ):
     try:
         rooms = await db.rooms.get_filtered_by_time(hotel_id=hotel_id,date_from=date_from,date_to=date_to)
-    except Exception as e:
-        raise HTTPException(404, detail=f"Не возможно получить список номеров")
+    except Exception:
+        raise HTTPException(404, detail="Не возможно получить список номеров")
     return {"rooms": rooms}
 
 
@@ -32,8 +30,8 @@ async def get_room(
 ):
     try:
         room = await db.rooms.get_one_or_none_with_rels(hotel_id=hotel_id, id=room_id)
-    except Exception as e:
-        raise HTTPException(404, detail=f"Не возможно получить номер")
+    except Exception:
+        raise HTTPException(404, detail="Не возможно получить номер")
     return {"room": room}
 
 
@@ -50,8 +48,8 @@ async def create_room(
         rooms_facilities_data = [RoomFacilityAdd(room_id=room.id, facility_id=f_id) for f_id in room_data.facilities_ids]
         await db.rooms_facilities.add_bulk(rooms_facilities_data)
         await db.commit()
-    except Exception as e:
-        raise HTTPException(404, detail=f"Ошибка при создании номера:")
+    except Exception:
+        raise HTTPException(404, detail="Ошибка при создании номера:")
     return {"room": room}
 
 @router.delete("/{hotel_id}/rooms/{room_id}")
@@ -79,12 +77,12 @@ async def change_room(
         await db.rooms.update(_room_data,False,id = room_id,hotel_id = hotel_id)
         await db.rooms_facilities.set_room_facilities(room_id,facility_ids = room_data.facilities_ids)
         await db.commit()
-    except Exception as e:
-        raise HTTPException(404, detail=f"Не возможно изменить номер:")
+    except Exception:
+        raise HTTPException(404, detail="Не возможно изменить номер:")
     return {"status": "OK"}
 
 @router.patch("/{hotel_id}/rooms/{room_id}")
-async def change_room(
+async def change_room_parts(
     db:DBDep,
     hotel_id: int,
     room_id: int,

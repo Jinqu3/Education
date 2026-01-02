@@ -2,9 +2,8 @@ from fastapi import Query,Body, APIRouter
 from datetime import date
 from fastapi_cache.decorator import cache
 
-from src.schemas.hotels import Hotel,HotelPatch,HotelAdd
+from src.schemas.hotels import HotelPatch,HotelAdd
 from src.api.dependencies import PaginationDep,DBDep
-from src.database import async_session_maker
 
 router = APIRouter(prefix="/hotels", tags=["Отели"])
 
@@ -74,7 +73,7 @@ async def create_hotel(
 
 
 @router.patch("/{hotel_id}")
-async def change_hotel(
+async def change_hotel_parts(
     db: DBDep,
     hotel_id:int,
     hotel_data: HotelPatch = Body(),

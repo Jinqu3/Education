@@ -1,5 +1,4 @@
 from PIL import Image
-from time import sleep
 import asyncio
 import os
 

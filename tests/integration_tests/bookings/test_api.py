@@ -1,5 +1,5 @@
 import pytest
-from src.api.dependencies import get_db,async_session_maker
+from src.api.dependencies import async_session_maker
 from src.utils.db_manager import DBManager
 
 @pytest.mark.parametrize("room_id, date_from, date_to, status_code", [
@@ -45,7 +45,7 @@ async def test_add_and_get_booking(
         room_id, date_from, date_to, status_code, booked_rooms,
         delete_all_bookings, auth_ac
 ):
-
+    
     response = await auth_ac.post(
         "/bookings",
         json={

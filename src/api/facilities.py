@@ -1,12 +1,8 @@
-from datetime import date
-from fastapi import APIRouter, Body, HTTPException
+from fastapi import APIRouter, Body
 from fastapi_cache.decorator import cache
-import json
 
-from src.init import redis_manager
-from src.api.dependencies import UserIdDep,DBDep
-from src.models.facilities import FacilitiesORM
-from src.schemas.facilities import FacilityAdd,RoomFacilityAdd
+from src.api.dependencies import DBDep
+from src.schemas.facilities import FacilityAdd
 
 
 router = APIRouter(prefix="/facilities", tags=["Особенности"])

@@ -1,10 +1,7 @@
-
-from fastapi import HTTPException
 from sqlalchemy import select,func
 from datetime import date
 
 from src.repository.mappers.mappers import HotelDataMapper
-from src.database import async_session_maker
 from src.models.rooms import RoomsORM
 from src.schemas.hotels import Hotel
 from src.repository.base import BaseRepository
@@ -25,25 +22,23 @@ class HotelsRepository(BaseRepository):
             limit,
             offset,
     ) -> list[Hotel]:
-        try:
-            rooms_ids_to_get = rooms_ids_for_booking(date_from=date_from, date_to=date_to)
-            hotels_ids_to_get = (
-                select(RoomsORM.hotel_id)
-                .select_from(RoomsORM)
-                .filter(RoomsORM.id.in_(rooms_ids_to_get))
-            )
+        rooms_ids_to_get = rooms_ids_for_booking(date_from=date_from, date_to=date_to)
+        hotels_ids_to_get = (
+            select(RoomsORM.hotel_id)
+            .select_from(RoomsORM)
+            .filter(RoomsORM.id.in_(rooms_ids_to_get))
+        )
 
-            query = select(HotelsORM).filter(HotelsORM.id.in_(hotels_ids_to_get))
-            if location:
-                query = query.filter(func.lower(HotelsORM.location).contains(location.strip().lower()))
-            if title:
-                query = query.filter(func.lower(HotelsORM.title).contains(title.strip().lower()))
-            query = (
-                query
-                .limit(limit)
-                .offset(offset)
-            )
-            result = await self.session.execute(query)
-        except:
-            return HTTPException(404,detail="Непредвиденная ошибка")
+        query = select(HotelsORM).filter(HotelsORM.id.in_(hotels_ids_to_get))
+        if location:
+            query = query.filter(func.lower(HotelsORM.location).contains(location.strip().lower()))
+        if title:
+            query = query.filter(func.lower(HotelsORM.title).contains(title.strip().lower()))
+        query = (
+            query
+            .limit(limit)
+            .offset(offset)
+        )
+        result = await self.session.execute(query)
+
         return [self.mapper.map_to_domain_entity(hotel) for hotel in result.scalars().all()]

@@ -1,9 +1,7 @@
-from datetime import date
-from fastapi import APIRouter, Body, HTTPException
+from fastapi import APIRouter, Body
 
 from src.api.dependencies import UserIdDep,DBDep
-from src.schemas.bookings import Booking,BookingAddRequest,BookingAdd
-from src.models.bookings import BookingsORM
+from src.schemas.bookings import BookingAddRequest,BookingAdd
 
 router = APIRouter(prefix="/bookings", tags=["Бронирования"])
 
@@ -30,17 +28,11 @@ async def create_booking(
 async def get_bookings(
         db: DBDep
 ):
-    try:
-        return await db.bookings.get_all()
-    except:
-        raise HTTPException(404,detail="Непредвиденная ошибка")
+    return await db.bookings.get_all()
 
 @router.get("/me")
 async def get_my_bookings(
         user_id: UserIdDep,
         db: DBDep
 ):
-    try:
-        return await db.bookings.get_filtered(user_id=user_id)
-    except:
-        raise HTTPException(404,detail="Непредвиденная ошибка")
+    return await db.bookings.get_filtered(user_id=user_id)

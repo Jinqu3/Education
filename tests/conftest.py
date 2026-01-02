@@ -1,19 +1,18 @@
+# ruff: noqa: E402
 import pytest
-from sqlalchemy.ext.asyncio import create_async_engine
 from httpx import AsyncClient,ASGITransport
 from unittest import mock
 import json
 
 mock.patch("fastapi_cache.decorator.cache", lambda *args, **kwargs: lambda f: f).start()
 
+from src.utils.db_manager import DBManager
 from src.schemas.rooms import RoomAdd
 from src.schemas.hotels import HotelAdd
 from src.config import settings
+from src.models import * # noqa
 from src.database import Base,engine,async_session_maker
-from src.models import *
 from src.main import app
-from src.utils.db_manager import DBManager
-from src.api.dependencies import get_db
 
 
 @pytest.fixture(scope="session",autouse=True)
@@ -78,8 +77,8 @@ async def register_user(ac, setup_database):
         }
     )
 
-@pytest.fixture(scope="session",autouse=True)
-async def auth_ac(ac, setup_database, register_user):
+@pytest.fixture(scope="function")
+async def auth_ac(ac, register_user):
     await ac.post(
         "/auth/login",
         json={

@@ -1,13 +1,11 @@
-from src.models.facilities import RoomsFacilitiesORM
 from src.repository.base import BaseRepository
 from src.models.rooms import RoomsORM
 from src.schemas.rooms import RoomWithRels
-from src.database import engine
 from src.repository.utils import rooms_ids_for_booking
 from src.repository.mappers.mappers import RoomDataMapper
 
-from sqlalchemy import select,func,delete
-from sqlalchemy.orm import selectinload,joinedload
+from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 from datetime import date
 
 class RoomsRepository(BaseRepository):
