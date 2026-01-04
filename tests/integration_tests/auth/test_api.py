@@ -1,13 +1,11 @@
-
-
-async def test_flow_auth(db,ac):
+async def test_flow_auth(db, ac):
     # Регистрация
     registration_new_user = await ac.post(
         "/auth/register",
         json={
             "email": "email2@example.com",
             "password": "password2",
-        }
+        },
     )
     assert registration_new_user.status_code == 200
     # Регистрация
@@ -16,10 +14,9 @@ async def test_flow_auth(db,ac):
         json={
             "email": "email2@example.com",
             "password": "password2",
-        }
+        },
     )
-    assert registration_new_user_twice.status_code == 500
-
+    assert registration_new_user_twice.status_code == 409
 
     # Аутентификация (НЕ верный пароль)
     login_new_user_wrong_password = await ac.post(
@@ -27,7 +24,7 @@ async def test_flow_auth(db,ac):
         json={
             "email": "email2@example.com",
             "password": "wrong_password",
-        }
+        },
     )
     assert login_new_user_wrong_password.status_code == 401
 
@@ -37,7 +34,7 @@ async def test_flow_auth(db,ac):
         json={
             "email": "email3@example.com",
             "password": "password2",
-        }
+        },
     )
     assert login_new_user_wrong_login.status_code == 401
 
@@ -47,7 +44,7 @@ async def test_flow_auth(db,ac):
         json={
             "email": "email2@example.com",
             "password": "password2",
-        }
+        },
     )
     assert login_new_user.status_code == 200
     cookie_token = ac.cookies.get("access_token")

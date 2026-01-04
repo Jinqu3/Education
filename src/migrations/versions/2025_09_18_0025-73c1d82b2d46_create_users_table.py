@@ -27,7 +27,7 @@ def upgrade() -> None:
         sa.Column("email", sa.String(length=100), nullable=False),
         sa.Column("hashed_password", sa.String(length=200), nullable=False),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("email",name= "unique_email_cnstr"),
+        sa.UniqueConstraint("email", name="unique_email_cnstr"),
     )
 
 

@@ -6,10 +6,11 @@ from src.database import async_session_maker
 from src.utils.db_manager import DBManager
 from src.tasks.celery_app import celery_instance
 
+
 @celery_instance.task
 def resize_image(image_path: str):
     sizes = [10000, 500, 200]
-    output_folder = 'static/images'
+    output_folder = "static/images"
     image_path = f"{image_path}"
 
     if not os.path.exists(image_path):
@@ -25,7 +26,9 @@ def resize_image(image_path: str):
     # Проходим по каждому размеру
     for size in sizes:
         # Сжимаем изображение
-        img_resized = img.resize((size, int(img.height * (size / img.width))), Image.Resampling.LANCZOS)
+        img_resized = img.resize(
+            (size, int(img.height * (size / img.width))), Image.Resampling.LANCZOS
+        )
 
         # Формируем имя нового файла
         new_file_name = f"{name}_{size}px{ext}"
@@ -38,13 +41,13 @@ def resize_image(image_path: str):
 
     print(f"Изображение сохранено в следующих размерах: {sizes} в папке {output_folder}")
 
+
 async def get_bookings_with_today_check_in_helper():
     async with DBManager(session_factory=async_session_maker) as db:
         bookings = await db.bookings.get_bookings_with_today_check_in()
         print(f"{bookings}=")
 
+
 @celery_instance.task(name="booking_today_check_in")
 def send_emails_to_users_with_today_check_in():
     asyncio.run(get_bookings_with_today_check_in_helper())
-
-

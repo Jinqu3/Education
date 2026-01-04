@@ -1,4 +1,4 @@
-from pydantic import BaseModel,ConfigDict
+from pydantic import BaseModel, ConfigDict
 
 from src.schemas.facilities import Facility
 
@@ -24,8 +24,10 @@ class Room(RoomAdd):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class RoomWithRels(Room):
     facilities: list[Facility]
+
 
 class RoomPatchRequest(BaseModel):
     title: str | None = None

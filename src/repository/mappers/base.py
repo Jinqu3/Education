@@ -2,8 +2,8 @@ from typing import TypeVar
 from src.database import Base
 from pydantic import BaseModel
 
-DBModelType = TypeVar('DBModelType',bound=Base)
-SchemaType = TypeVar('SchemaType',bound=BaseModel)
+DBModelType = TypeVar("DBModelType", bound=Base)
+SchemaType = TypeVar("SchemaType", bound=BaseModel)
 
 
 class DataMapper:
@@ -17,8 +17,8 @@ class DataMapper:
         :param data: db_model: Alchemy model
         :return: Pydantic scheme
         """
-        return cls.schema.model_validate(data,from_attributes=True)
-    
+        return cls.schema.model_validate(data, from_attributes=True)
+
     @classmethod
     def map_to_persistence_entity(cls, data):
         """
