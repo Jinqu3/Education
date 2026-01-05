@@ -78,7 +78,12 @@ async def create_hotel(
         }
     ),
 ):
-    hotel = await db.hotels.add(hotel_data)
+    try:
+        hotel = await db.hotels.add(hotel_data)
+    except ObjectAlreadyExistsException as ex:
+        raise HTTPException(status_code=409,detail=ex.detail)
+    except CanNotAddObjectException as ex:
+        raise HTTPException(status_code=409, detail=ex.detail)
     await db.commit()
     return {"status": "OK", "data": hotel}
 

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Body,HTTPException
 
 from src.api.dependencies import UserIdDep, DBDep
 from src.schemas.bookings import BookingAddRequest, BookingAdd
-from src.exceptions import ObjectNotFoundException,AllRoomsAreBookedException
+from src.exceptions import ObjectNotFoundException, AllRoomsAreBookedException, ObjectAlreadyExistsException
 
 router = APIRouter(prefix="/bookings", tags=["Бронирования"])
 
@@ -22,6 +22,8 @@ async def create_booking(user_id: UserIdDep, db: DBDep, booking_data: BookingAdd
     try:
         booking = await db.bookings.add_booking(_booking_data, hotel_id=room.hotel_id)
     except AllRoomsAreBookedException as ex:
+        raise HTTPException(status_code=409,detail=ex.detail)
+    except ObjectAlreadyExistsException as ex:
         raise HTTPException(status_code=409,detail=ex.detail)
     await db.commit()
 

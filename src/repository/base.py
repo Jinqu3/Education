@@ -1,10 +1,11 @@
-from sqlalchemy.exc import NoResultFound
+from sqlalchemy.exc import NoResultFound, IntegrityError
 from typing import Sequence
-
+import logging
 from pydantic import BaseModel
 from sqlalchemy import select, insert, delete, update
-from src.repository.mappers.base import DataMapper
+from asyncpg.exceptions import UniqueViolationError
 
+from src.repository.mappers.base import DataMapper
 from src.exceptions import *
 
 class BaseRepository:
@@ -40,13 +41,21 @@ class BaseRepository:
         return self.mapper.map_to_domain_entity(res)
 
     async def add(self, model_data: BaseModel):
-        stmt = insert(self.model).values(**model_data.model_dump()).returning(self.model)
-        result = await self.session.execute(stmt)
         try:
+            add_data_stmt = insert(self.model).values(**model_data.model_dump()).returning(self.model)
+            result = await self.session.execute(add_data_stmt)
             res = result.scalars().one()
-        except:
-            raise CanNotAddObjectException
-        return self.mapper.map_to_domain_entity(res)
+            return self.mapper.map_to_domain_entity(res)
+        except IntegrityError as ex:
+            logging.error(
+                f"Не удалось добавить данные в БД, входные данные: {model_data}, тип ошибки: {type(ex.orig.__cause__)}"
+            )
+            print(ex.orig.__cause__)
+            if isinstance(ex.orig.__cause__, UniqueViolationError):
+                raise ObjectAlreadyExistsException from ex
+            else:
+                logging.critical(f"Непредвиденная ошибка! Не удалось добавить данные в БД, входные данные: {model_data}, тип ошибки: {type(ex.orig.__cause__)}")
+                raise CanNotAddObjectException
 
     async def add_bulk(self, model_data: Sequence[BaseModel]):
         add_data_stmt = insert(self.model).values([item.model_dump() for item in model_data])

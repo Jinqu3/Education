@@ -38,6 +38,9 @@ async def create_facility(
     db: DBDep,
     facility_data: FacilityAdd = Body(),
 ):
-    facility = await db.facilities.add(facility_data)
+    try:
+        facility = await db.facilities.add(facility_data)
+    except ObjectAlreadyExistsException as ex:
+        raise HTTPException(status_code=409,detail=ex.detail)
     await db.commit()
     return {"status": 200, "data": facility}

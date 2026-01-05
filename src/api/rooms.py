@@ -53,6 +53,8 @@ async def create_room(
         room = await db.rooms.add(_room_data)
     except CanNotAddObjectException:
         raise HTTPException(404, detail="Невозможно забронировать номер")
+    except ObjectAlreadyExistsException as ex:
+        raise HTTPException(status_code=409,detail=ex.detail)
 
     rooms_facilities_data = [
         RoomFacilityAdd(room_id=room.id, facility_id=f_id) for f_id in room_data.facilities_ids

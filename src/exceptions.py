@@ -32,3 +32,7 @@ class CanNotDeleteObjectException(BaseException):
 class CanNotСhangeObjectException(BaseException):
 
     detail = "Невозможно изменить объект"
+
+class ObjectAlreadyExistsException(BaseException):
+
+    detail = "Объект уже создан"
