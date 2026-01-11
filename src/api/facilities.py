@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body,HTTPException
 from fastapi_cache.decorator import cache
 
 from src.api.dependencies import DBDep
 from src.schemas.facilities import FacilityAdd
+from src.exceptions import ObjectAlreadyExistsException, FacilityNotFoundException,FacilityNotFoundHTTPException,FacilityAlreadyExistsHTTPException
+from src.services.facilities import FacilitiesService
 
 
 router = APIRouter(prefix="/facilities", tags=["Особенности"])
@@ -13,7 +15,9 @@ router = APIRouter(prefix="/facilities", tags=["Особенности"])
 async def get_facilities(
     db: DBDep,
 ):
-    return await db.facilities.get_all()
+    facilities = await FacilitiesService(db).get_facilities()
+    return facilities
+
 
 
 @router.get("/{facility_id}")
@@ -21,7 +25,11 @@ async def get_facility(
     db: DBDep,
     facility_id: int,
 ):
-    return await db.facilities.get_one_or_none(id=facility_id)
+    try:
+        facility = await FacilitiesService(db).get_facility(facility_id=facility_id)
+    except FacilityNotFoundException:
+        raise FacilityNotFoundHTTPException
+    return facility
 
 
 @router.delete("/{facility_id}")
@@ -29,8 +37,8 @@ async def delete_facilities(
     facility_id: int,
     db: DBDep,
 ):
-    await db.rooms_facilities.delete(id=facility_id)
-    return {"status": 200}
+    await FacilitiesService(db).delete_facility(facility_id=facility_id)
+    return {"status": "OK"}
 
 
 @router.post("")
@@ -39,8 +47,9 @@ async def create_facility(
     facility_data: FacilityAdd = Body(),
 ):
     try:
-        facility = await db.facilities.add(facility_data)
-    except ObjectAlreadyExistsException as ex:
-        raise HTTPException(status_code=409,detail=ex.detail)
-    await db.commit()
-    return {"status": 200, "data": facility}
+        facility = await FacilitiesService(db).add_facility(
+            facility_data=facility_data
+        )
+    except ObjectAlreadyExistsException:
+        raise FacilityAlreadyExistsHTTPException
+    return {"status": "OK", "data": facility}

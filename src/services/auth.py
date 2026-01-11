@@ -1,12 +1,14 @@
 import jwt
-from fastapi import HTTPException
 from passlib.context import CryptContext
 from datetime import datetime, timezone, timedelta
 
+from src.exceptions import ObjectAlreadyExistsException, UserAlreadyExistsHTTPException, ObjectNotFoundException, UserAlreadyExistsException, IncorrectPasswordException, UserNotFoundException
+from src.services.base import BaseService
 from src.config import settings
+from src.schemas.users import UserAdd,UserRequestADD
 
 
-class AuthService:
+class AuthService(BaseService):
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
     def verify_password(self, password: str, hashed_password: str) -> str:
@@ -31,3 +33,38 @@ class AuthService:
             return jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=settings.JWT_ALGORITHM)
         except jwt.exceptions.DecodeError:
             raise HTTPException(status_code=401, detail="Invalid token")
+
+
+    async def register_user(
+        self,
+        data: UserRequestADD,
+    ):
+        hashed_password = self.hash_password(data.password)
+        new_user_data = UserAdd(email=data.email, hashed_password=hashed_password)
+        try:
+            await self.db.users.add(new_user_data)
+        except ObjectAlreadyExistsException as ex:
+            raise UserAlreadyExistsException from ex
+        await self.db.commit()
+
+    async def login_user(
+        self,
+        data: UserRequestADD,
+    ):
+        user = await self.db.users.get_user_with_hashed_password(email=data.email)
+        if not user:
+            raise UserNotFoundException
+        if not self.verify_password(data.password, user.hashed_password):
+            raise IncorrectPasswordException
+
+        access_token = self.create_access_token({"user_id": user.id})
+
+        return access_token
+
+    async def get_one_or_none_user(
+        self,
+        user_id: int
+    ):
+        return await self.db.users.get_one_or_none(id=user_id)
+
+

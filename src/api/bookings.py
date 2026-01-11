@@ -1,40 +1,45 @@
 from fastapi import APIRouter, Body,HTTPException
 
+from exceptions import RoomNotFoundHTTPException
 from src.api.dependencies import UserIdDep, DBDep
 from src.schemas.bookings import BookingAddRequest, BookingAdd
-from src.exceptions import ObjectNotFoundException, AllRoomsAreBookedException, ObjectAlreadyExistsException
+from src.exceptions import ObjectNotFoundException, AllRoomsAreBookedException, AllRoomsAreBookedHTTPException, ObjectAlreadyExistsException, \
+    RoomNotFoundException, HotelNotFoundException
+from src.services.bookings import BookingService
 
 router = APIRouter(prefix="/bookings", tags=["Бронирования"])
 
 
 @router.post("")
-async def create_booking(user_id: UserIdDep, db: DBDep, booking_data: BookingAddRequest = Body()):
-    # Расчёт суммы бронирования
+async def create_booking(
+        user_id: UserIdDep,
+        db: DBDep,
+        booking_data: BookingAddRequest = Body()
+):
     try:
-        room = await db.rooms.get_one(id=booking_data.room_id)
-    except ObjectNotFoundException:
-        raise HTTPException(status_code=404,detail="Номер не найден")
-    room_price = room.price
-    days = (booking_data.date_to - booking_data.date_from).days
-    price = days * room_price
+        booking = await BookingService(db).add_booking(
+            user_id=user_id,
+            booking_data=booking_data
+        )
+    except RoomNotFoundException:
+        raise RoomNotFoundHTTPException
+    except HotelNotFoundException:
+        raise HotelNotFoundHTTPException
+    except AllRoomsAreBookedException:
+        raise AllRoomsAreBookedHTTPException
 
-    _booking_data = BookingAdd(user_id=user_id, price=price, **booking_data.model_dump())
-    try:
-        booking = await db.bookings.add_booking(_booking_data, hotel_id=room.hotel_id)
-    except AllRoomsAreBookedException as ex:
-        raise HTTPException(status_code=409,detail=ex.detail)
-    except ObjectAlreadyExistsException as ex:
-        raise HTTPException(status_code=409,detail=ex.detail)
-    await db.commit()
-
-    return {"data": booking}
+    return {"status":"OK","data": booking}
 
 
 @router.get("")
 async def get_bookings(db: DBDep):
-    return await db.bookings.get_all()
+    return await BookingService(db).get_bookings()
 
 
 @router.get("/me")
-async def get_my_bookings(user_id: UserIdDep, db: DBDep):
-    return await db.bookings.get_filtered(user_id=user_id)
+async def get_my_bookings(
+        user_id: UserIdDep,
+        db: DBDep
+):
+    return await BookingService(db).get_my_bookings(user_id=user_id)
+

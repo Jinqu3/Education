@@ -26,7 +26,7 @@ async def test_flow_auth(db, ac):
             "password": "wrong_password",
         },
     )
-    assert login_new_user_wrong_password.status_code == 401
+    assert login_new_user_wrong_password.status_code == 409
 
     # Аутентификация (НЕ верный логин)
     login_new_user_wrong_login = await ac.post(
@@ -36,7 +36,7 @@ async def test_flow_auth(db, ac):
             "password": "password2",
         },
     )
-    assert login_new_user_wrong_login.status_code == 401
+    assert login_new_user_wrong_login.status_code == 404
 
     # Аутентификация (верная)
     login_new_user = await ac.post(
@@ -57,9 +57,9 @@ async def test_flow_auth(db, ac):
     # Выход из профиля
     logout_user = await ac.post("/auth/logout")
     assert logout_user.status_code == 200
-    assert not ac.cookies.get("access_token")
+    assert ac.cookies.get("access_token") is None
 
     # Проверка себя (пользователь вышел -> jwt is None)
     info_about_logout_user = await ac.get("/auth/me")
     assert info_about_logout_user.status_code == 401
-    assert not ac.cookies.get("access_token")
+    assert ac.cookies.get("access_token") is None

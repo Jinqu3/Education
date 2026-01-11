@@ -1,10 +1,11 @@
 from fastapi import Query, Body, APIRouter, HTTPException
-from datetime import date
 from fastapi_cache.decorator import cache
+from datetime import date
 
-from src.exceptions import DatesCannotBeEqualException, InvalidDateOrderException
-from src.schemas.hotels import HotelPatch, HotelAdd
+from src.exceptions import DatesCannotBeEqualException, InvalidDateOrderException, HotelNotFoundException,ObjectAlreadyExistsException
 from src.api.dependencies import PaginationDep, DBDep
+from src.services.hotels import HotelService
+from src.schemas.hotels import HotelPatch,HotelAdd
 
 router = APIRouter(prefix="/hotels", tags=["Отели"])
 
@@ -19,21 +20,18 @@ async def get_hotels(
     date_from: date = Query(example="2024-08-01"),
     date_to: date = Query(example="2024-08-10"),
 ):
-    per_page = pagination.per_page or 10
     try:
-        hotels = await db.hotels.get_filtered_by_time(
-            date_from=date_from,
-            date_to=date_to,
+        return await HotelService(db).get_filtered_by_time(
+            pagination=pagination,
             location=location,
-            title=title,
-            limit=per_page,
-            offset=per_page * (pagination.page - 1),
+            title= title,
+            date_from=date_from,
+            date_to= date_to
         )
     except DatesCannotBeEqualException as ex:
         raise HTTPException(status_code=400,detail=ex.detail)
     except InvalidDateOrderException as ex:
         raise HTTPException(status_code=400, detail=ex.detail)
-    return {'data':hotels}
 
 @router.get("/{hotel_id}")
 async def get_hotel(
@@ -41,10 +39,11 @@ async def get_hotel(
     db: DBDep,
 ):
     try:
-        hotel = await db.hotels.get_one(id=hotel_id)
-    except ObjectNotFoundException:
-        raise HTTPException(status_code=404, detail="Отель не найден")
-    return {"data": hotel}
+        return await HotelService(db).get_hotel(
+            hotel_id=hotel_id
+        )
+    except HotelNotFoundException as ex:
+        raise HTTPException(status_code=404, detail=ex.detail)
 
 
 @router.delete("/{hotel_id}")
@@ -52,12 +51,14 @@ async def delete_hotels(
     hotel_id: int,
     db: DBDep,
 ):
-    await db.hotels.delete(id=hotel_id)
+    await HotelService(db).delete_hotel(
+        hotel_id=hotel_id
+    )
     return {"status": "OK"}
 
 
 @router.post("")
-async def create_hotel(
+async def add_hotel(
     db: DBDep,
     hotel_data: HotelAdd = Body(
         openapi_examples={
@@ -79,12 +80,11 @@ async def create_hotel(
     ),
 ):
     try:
-        hotel = await db.hotels.add(hotel_data)
-    except ObjectAlreadyExistsException as ex:
-        raise HTTPException(status_code=409,detail=ex.detail)
-    except CanNotAddObjectException as ex:
-        raise HTTPException(status_code=409, detail=ex.detail)
-    await db.commit()
+        hotel = HotelService(db).add_hotel(
+            hotel_data=hotel_data,
+        )
+    except ObjectAlreadyExistsException:
+        raise HTTPException(status_code=409,detail="Отель не найден")
     return {"status": "OK", "data": hotel}
 
 
@@ -94,8 +94,10 @@ async def change_hotel_parts(
     hotel_id: int,
     hotel_data: HotelPatch = Body(),
 ):
-    await db.hotels.update(hotel_data, exclude_unset=True, id=hotel_id)
-    await db.commit()
+    await HotelService(db).change_hotel_parts(
+        hotel_id=hotel_id,
+        hotel_data=hotel_data
+        )
     return {"status": "OK"}
 
 
@@ -105,6 +107,8 @@ async def change_hotel(
     hotel_id: int,
     hotel_data: HotelAdd = Body(),
 ):
-    await db.hotels.update(hotel_data, exclude_unset=False, id=hotel_id)
-    await db.commit()
+    await HotelService(db).change_hotel(
+        hotel_id=hotel_id,
+        hotel_data=hotel_data
+    )
     return {"status": "OK"}

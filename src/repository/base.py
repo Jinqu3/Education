@@ -6,7 +6,7 @@ from sqlalchemy import select, insert, delete, update
 from asyncpg.exceptions import UniqueViolationError
 
 from src.repository.mappers.base import DataMapper
-from src.exceptions import *
+from src.exceptions import ObjectNotFoundException,ObjectAlreadyExistsException
 
 class BaseRepository:
     model = None
@@ -55,7 +55,7 @@ class BaseRepository:
                 raise ObjectAlreadyExistsException from ex
             else:
                 logging.critical(f"Непредвиденная ошибка! Не удалось добавить данные в БД, входные данные: {model_data}, тип ошибки: {type(ex.orig.__cause__)}")
-                raise CanNotAddObjectException
+                raise ex
 
     async def add_bulk(self, model_data: Sequence[BaseModel]):
         add_data_stmt = insert(self.model).values([item.model_dump() for item in model_data])
@@ -73,15 +73,8 @@ class BaseRepository:
             .filter_by(**filter_by)
             .values(**model_data.model_dump(exclude_unset=exclude_unset))
         )
-        try:
-            await self.session.execute(stmt)
-        except:
-            raise CanNotСhangeObjectException
+        await self.session.execute(stmt)
 
     async def delete(self, **filter_by) -> None:
         stmt = delete(self.model).filter_by(**filter_by)
-        try:
-            await self.session.execute(stmt)
-            await self.session.commit()
-        except:
-            raise CanNotDeleteObjectException
+        await self.session.execute(stmt)

@@ -7,7 +7,6 @@ from src.schemas.hotels import Hotel
 from src.repository.base import BaseRepository
 from src.models.hotels import HotelsORM
 from src.repository.utils import rooms_ids_for_booking
-from src.exceptions import DatesCannotBeEqualException,InvalidDateOrderException
 
 
 class HotelsRepository(BaseRepository):
@@ -24,10 +23,6 @@ class HotelsRepository(BaseRepository):
         limit,
         offset,
     ) -> list[Hotel]:
-        if date_from > date_to:
-            raise InvalidDateOrderException
-        if date_from == date_to:
-            raise DatesCannotBeEqualException
 
         rooms_ids_to_get = rooms_ids_for_booking(date_from=date_from, date_to=date_to)
         hotels_ids_to_get = (

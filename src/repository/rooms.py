@@ -5,6 +5,7 @@ from src.repository.utils import rooms_ids_for_booking
 from src.repository.mappers.mappers import RoomDataMapper
 from src.exceptions import DatesCannotBeEqualException,InvalidDateOrderException,ObjectNotFoundException
 
+from sqlalchemy.exc import NoResultFound
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from datetime import date
